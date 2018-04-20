@@ -25,9 +25,23 @@ def create_database(database_path):
     rrdtool.create(database_path, RRDTOOL_SOURCES, RRDTOOL_ARCHIVES)
 
 
+def rrdtool_add_sample(database_path, sample):
+    rrdtool.update(database_path, 'N:' + str(sample))
+
+
+def read_input_file(input_file):
+    if not os.path.exists(input_file):
+        print "Could not access input file: %s" % input_file
+        return
+    with open(input_file) as input_data:
+        input_sample = input_data.read().strip()
+        return input_sample
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--database', '-d', required=True, help='RRDtool database')
+    parser.add_argument('--input', '-i', help='Input file')
     args = parser.parse_args()
     return args
 
@@ -35,6 +49,10 @@ def parse_args():
 def main():
     args = parse_args()
     create_database(args.database)
+
+    if args.input:
+        sample = read_input_file(args.input)
+        rrdtool_add_sample(args.database, sample)
 
 
 if __name__ == '__main__':
