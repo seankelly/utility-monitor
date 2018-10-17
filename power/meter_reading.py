@@ -37,8 +37,8 @@ def rtl_tcp_one_shot(rtl_tcp_server=None, filterid=None):
         rtlamr_cmd.extend(['-server', rtl_tcp_server])
     if filterid:
         rtlamr_cmd.extend(['-filterid', filterid])
-    rtlamr = subprocess.Popen(rtlamr_cmd, stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
+    rtlamr = subprocess.check_call(rtlamr_cmd, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
     stdout, stderr = rtlamr.communicate()
     meter_idm = json.loads(stdout)
     return meter_idm["LastConsumptionCount"]
