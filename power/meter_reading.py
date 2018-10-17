@@ -42,6 +42,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--database', '-d', required=True, help='RRDtool database')
     parser.add_argument('--input', '-i', help='Input file')
+    parser.add_argument('--filterid', '-I', help="Filter on this meter ID")
+    parser.add_argument('--server', '-s', help="rtl_tcp server")
     args = parser.parse_args()
     return args
 
