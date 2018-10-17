@@ -1,7 +1,9 @@
 #!/usr/bin/env python2
 
 import argparse
+import json
 import os.path
+import subprocess
 import sys
 
 import rrdtool
@@ -29,6 +31,19 @@ def rrdtool_add_sample(database_path, sample):
     rrdtool.update(database_path, 'N:' + str(sample))
 
 
+def rtl_tcp_one_shot(rtl_tcp_server=None, filterid=None):
+    rtlamr_cmd = ['rtlamr', '-msgtype', 'idm', '-format', 'json']
+    if rtl_tcp_server:
+        rtlamr_cmd.extend(['-server', rtl_tcp_server])
+    if filterid:
+        rtlamr_cmd.extend(['-filterid', filterid])
+    rtlamr = subprocess.Popen(rtlamr_cmd, stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+    stdout, stderr = rtlamr.communicate()
+    meter_idm = json.loads(stdout)
+    return meter_idm["LastConsumptionCount"]
+
+
 def read_input_file(input_file):
     if not os.path.exists(input_file):
         print "Could not access input file: %s" % input_file
@@ -54,7 +69,9 @@ def main():
 
     if args.input:
         sample = read_input_file(args.input)
-        rrdtool_add_sample(args.database, sample)
+    else:
+        sample = rtl_tcp_one_shot(args.server, args.filterid)
+    rrdtool_add_sample(args.database, sample)
 
 
 if __name__ == '__main__':
