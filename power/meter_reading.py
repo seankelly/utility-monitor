@@ -41,7 +41,7 @@ def rtl_tcp_one_shot(rtl_tcp_server=None, filterid=None):
                                    stderr=subprocess.PIPE)
     stdout, stderr = rtlamr.communicate()
     meter_idm = json.loads(stdout)
-    return meter_idm["LastConsumptionCount"]
+    return meter_idm['Message']['LastConsumptionCount']
 
 
 def read_input_file(input_file):
