@@ -32,7 +32,7 @@ def rrdtool_add_sample(database_path, sample):
 
 
 def rtl_tcp_one_shot(rtl_tcp_server=None, filterid=None):
-    rtlamr_cmd = ['rtlamr', '-msgtype', 'idm', '-format', 'json']
+    rtlamr_cmd = ['rtlamr', '-msgtype', 'idm', '-format', 'json', '-single']
     if rtl_tcp_server:
         rtlamr_cmd.extend(['-server', rtl_tcp_server])
     if filterid:
