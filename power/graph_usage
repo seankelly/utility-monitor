@@ -1,0 +1,62 @@
+#!/usr/bin/env python2
+
+
+import argparse
+from datetime import datetime
+import os.path
+
+import rrdtool
+
+def graph_usage(www_dir, database):
+    common_args = [
+        '--imgformat', 'PNG',
+        '--width', '600',
+        '--height', '300',
+        '--lower-limit', '0',
+        '--vertical-label', 'Kilowatt-hours',
+        'DEF:decawatts=%s:decawatts:AVERAGE' % database,
+        'CDEF:kilowatts=decawatts,100,/',
+        'AREA:kilowatts#ff0000:Power'
+    ]
+
+    # Graph today and yesterday.
+    rrdtool.graph(
+        os.path.join(www_dir, 'today_usage.png'),
+        '--start', 'midnight today',
+        '--end', 'midnight tomorrow',
+        *common_args
+    )
+    rrdtool.graph(
+        os.path.join(www_dir, 'yesterday_usage.png'),
+        '--start', 'midnight yesterday',
+        '--end', 'midnight today',
+        *common_args
+    )
+
+    # Graph current week.
+    rrdtool.graph(
+        os.path.join(www_dir, 'week_usage.png'),
+        '--start', 'midnight Sunday',
+        '--end', 'midnight Saturday+24h',
+        *common_args
+    )
+
+    # Graph current month.
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--database', '-d', required=True, help="RRDtool database")
+    parser.add_argument('--www-dir', '-o', required=True,
+                        help="Graph output directory")
+    args = parser.parse_args()
+    return args
+
+
+def main():
+    args = parse_args()
+    graph_usage(args.www_dir, args.database)
+
+
+if __name__ == '__main__':
+    main()
