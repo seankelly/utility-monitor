@@ -45,7 +45,7 @@ def rtl_tcp_one_shot(rtl_tcp_server=None, filterid=None):
     if rtlamr.returncode != 0:
         raise RuntimeError("Failed to run rtlamr: %s" % stderr)
     meter_idm = json.loads(stdout)
-    return meter_idm['Message']['LastConsumptionCount']
+    return meter_idm
 
 
 def read_input_file(input_file):
@@ -53,8 +53,8 @@ def read_input_file(input_file):
         print "Could not access input file: %s" % input_file
         return
     with open(input_file) as input_data:
-        input_sample = input_data.read().strip()
-        return input_sample
+        meter_reading = json.load(input_data)
+        return meter_reading
 
 
 def parse_args():
