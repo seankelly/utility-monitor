@@ -27,12 +27,13 @@ def create_database(database_path):
     rrdtool.create(database_path, RRDTOOL_SOURCES, RRDTOOL_ARCHIVES)
 
 
-def rrdtool_add_sample(database_path, sample):
-    rrdtool.update(database_path, 'N:' + str(sample))
+def rrdtool_add_sample(database_path, meter_reading):
+    consumption = meter_reading['Message']['LastConsumptionCount']
+    rrdtool.update(database_path, 'N:' + str(consumption))
 
 
 def rtl_tcp_one_shot(rtl_tcp_server=None, filterid=None):
-    rtlamr_cmd = ['timeout', '90',
+    rtlamr_cmd = ['timeout', '200',
                   'rtlamr', '-msgtype', 'idm', '-format', 'json', '-single']
     if rtl_tcp_server:
         rtlamr_cmd.extend(['-server', rtl_tcp_server])
