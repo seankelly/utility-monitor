@@ -1,0 +1,46 @@
+#!/usr/bin/env python2
+
+import argparse
+import json
+import os.path
+import subprocess
+
+
+def rtlamr(rtl_tcp_server=None, filterid=None):
+    rtlamr_cmd = ['rtlamr', '-msgtype', 'idm', '-format', 'json']
+    if rtl_tcp_server:
+        rtlamr_cmd.extend(['-server', rtl_tcp_server])
+    if filterid:
+        rtlamr_cmd.extend(['-filterid', filterid])
+    rtlamr = subprocess.Popen(rtlamr_cmd, stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+    return rtlamr
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--output', '-o', required=True,
+                        help="File to write JSON output from rtlamr")
+    parser.add_argument('--filterid', '-I', help="Filter on this meter ID")
+    parser.add_argument('--server', '-s', help="rtl_tcp server")
+    args = parser.parse_args()
+    return args
+
+
+def main():
+    args = parse_args()
+    rtlamr_proc = rtlamr(args.server, args.filterid)
+    stdout = rtlamr_proc.stdout
+    while True:
+        line = rtlamr_proc.stdout.readline()
+        if line:
+            # Overwrite the file every time.
+            with open(args.output, 'w') as output_file:
+                output_file.write(line)
+                output_file.flush()
+        else:
+            break
+
+
+if __name__ == '__main__':
+    main()
