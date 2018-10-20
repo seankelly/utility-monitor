@@ -15,7 +15,7 @@ RRDTOOL_SOURCES = [
 ]
 RRDTOOL_ARCHIVES = [
     # Three months (95 days) of every 15 minutes.
-    'RRA:AVERAGE:0.5:3:9200',
+    'RRA:AVERAGE:0.3:3:9200',
     # Five years of hourly data.
     'RRA:AVERAGE:0.5:12:44000',
 ]
