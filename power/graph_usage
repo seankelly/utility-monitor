@@ -14,9 +14,19 @@ def graph_usage(www_dir, database):
         '--height', '300',
         '--lower-limit', '0',
         '--vertical-label', 'Kilowatt-hours',
-        'DEF:decawatts=%s:decawatts:AVERAGE' % database,
-        'CDEF:kilowatts=decawatts,100,/',
-        'AREA:kilowatts#ff0000:Power'
+        'DEF:daWh_rate=%s:decawatts:AVERAGE' % database,
+        # Convert the daWh rate that rrdtool wants to graph into the total daWh
+        # consumed over the step interval.
+        'CDEF:daWh=daWh_rate,900,*',
+        # The electric company uses kWh for billing so convert to that.
+        'CDEF:kwh=daWh,100,/',
+        'AREA:kwh#ff0000:Power',
+        # rrdtool does the right thing for the TOTAL function but we need to
+        # convert the daWh rate into a kWh rate and get the TOTAL of that rate.
+        'CDEF:kwh_rate=daWh_rate,100,/',
+        'VDEF:total_daWh=daWh_rate,TOTAL',
+        'VDEF:total_kwh=kwh_rate,TOTAL',
+        'GPRINT:total_kwh:Total\:%lf',
     ]
 
     # Graph today and yesterday.
