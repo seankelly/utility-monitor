@@ -13,6 +13,8 @@ def graph_usage(www_dir, database):
         '--width', '600',
         '--height', '300',
         '--lower-limit', '0',
+        '--units-exponent', '0',
+        '--left-axis-format', '%1.2lf',
         '--vertical-label', 'Kilowatt-hours',
         'DEF:daWh_rate=%s:decawatts:AVERAGE' % database,
         # Convert the daWh rate that rrdtool wants to graph into the total daWh
