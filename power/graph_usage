@@ -58,7 +58,7 @@ def graph_usage(www_dir, database):
     next_month = today.month + 1
     if next_month > 12:
         next_month = 1
-    end_date = today.replace(today.year, next_month, today.day)
+    end_date = today.replace(today.year, next_month, 1)
     rrdtool.graph(
         os.path.join(www_dir, 'month_usage.png'),
         '--start', today.strftime('midnight %B 01'),
