@@ -28,7 +28,7 @@ def graph_usage(www_dir, database):
         'CDEF:kwh_rate=daWh_rate,100,/',
         'VDEF:total_daWh=daWh_rate,TOTAL',
         'VDEF:total_kwh=kwh_rate,TOTAL',
-        'GPRINT:total_kwh:Total\:%lf',
+        'GPRINT:total_kwh:Total kWh\:%lf',
     ]
 
     # Graph today and yesterday.
