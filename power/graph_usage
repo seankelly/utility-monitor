@@ -15,14 +15,16 @@ def graph_usage(www_dir, database):
         '--lower-limit', '0',
         '--units-exponent', '0',
         '--left-axis-format', '%1.2lf',
-        '--vertical-label', 'Kilowatt-hours',
+        '--vertical-label', 'Watts',
         'DEF:daWh_rate=%s:decawatts:AVERAGE' % database,
         # Convert the daWh rate that rrdtool wants to graph into the total daWh
         # consumed over the step interval.
         'CDEF:daWh=daWh_rate,900,*',
+        # Convert to average Watts over the step interval because that's easier
+        # to understand.
         # The electric company uses kWh for billing so convert to that.
-        'CDEF:kwh=daWh,100,/',
-        'AREA:kwh#ff0000:Power',
+        'CDEF:watts=daWh,40,*',
+        'AREA:watts#ff0000:Power',
         # rrdtool does the right thing for the TOTAL function but we need to
         # convert the daWh rate into a kWh rate and get the TOTAL of that rate.
         'CDEF:kwh_rate=daWh_rate,100,/',
