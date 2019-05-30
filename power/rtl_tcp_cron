@@ -2,8 +2,15 @@
 
 SESSIONNAME=rtl_tcp
 LISTEN_ADDRESS=127.0.0.1
+FILTERID=123456
+OUTPUT_FILE=power.json
 
 if ! tmux has-session -t $SESSIONNAME >/dev/null 2>&1 ; then
     tmux new-session -s $SESSIONNAME -d
-    tmux send-keys -t $SESSIONNAME "rtl_tcp -a $LISTEN_ADDRESS" C-m
+    # Put rtl_tcp in the top pane.
+    tmux send-keys -t 0 "rtl_tcp -a $LISTEN_ADDRESS" Enter
+    # Put rtlamr in the bottom pane.
+    tmux split-window -v
+    # Start with a simple sleep in case tmux is faster than the shell.
+    tmux send-keys -t 1 "sleep 1" Enter "./rtlamr_sample --server $LISTEN_ADDRESS:1234 --filterid $FILTERID --output $OUTPUT_FILE" Enter
 fi
