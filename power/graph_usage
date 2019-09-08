@@ -7,7 +7,7 @@ import os.path
 
 import rrdtool
 
-def graph_usage(www_dir, database):
+def graph_usage(www_dir, database, cost=None):
     common_args = [
         '--imgformat', 'PNG',
         '--width', '600',
@@ -29,8 +29,16 @@ def graph_usage(www_dir, database):
         # convert the daWh rate into a kWh rate and get the TOTAL of that rate.
         'CDEF:kwh_rate=daWh_rate,100,/',
         'VDEF:total_kwh=kwh_rate,TOTAL',
-        'GPRINT:total_kwh:Total kWh\:%lf',
+        'COMMENT:\\n',
+        'GPRINT:total_kwh:Total %0.3lf kWh\\n',
     ]
+
+    if cost:
+        common_args.extend([
+            'CDEF:cost_=kwh_rate,%f,*' % cost,
+            'VDEF:cost=cost_,TOTAL',
+            'GPRINT:cost:Cost  $%0.3lf\\n',
+        ])
 
     # Graph today and yesterday.
     rrdtool.graph(
@@ -75,13 +83,14 @@ def parse_args():
     parser.add_argument('--database', '-d', required=True, help="RRDtool database")
     parser.add_argument('--www-dir', '-o', required=True,
                         help="Graph output directory")
+    parser.add_argument('--cost', '-c', type=float, help="kWh cost")
     args = parser.parse_args()
     return args
 
 
 def main():
     args = parse_args()
-    graph_usage(args.www_dir, args.database)
+    graph_usage(args.www_dir, args.database, cost=args.cost)
 
 
 if __name__ == '__main__':
