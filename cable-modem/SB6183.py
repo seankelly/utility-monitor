@@ -1,13 +1,15 @@
+import argparse
 import configparser
 import os
 import sys
-import argparse
-from influxdb import InfluxDBClient
-from influxdb.exceptions import InfluxDBClientError, InfluxDBServerError
 import time
 from datetime import datetime
+
 from bs4 import BeautifulSoup
+from influxdb import InfluxDBClient
+from influxdb.exceptions import InfluxDBClientError, InfluxDBServerError
 import requests
+
 
 class configManager():
 
@@ -26,7 +28,6 @@ class configManager():
         print('Configuration Successfully Loaded')
 
     def _load_config_values(self):
-
         # General
         self.delay = self.config['GENERAL'].getint('Delay', fallback=2)
         self.output = self.config['GENERAL'].getboolean('Output', fallback=True)
@@ -41,12 +42,12 @@ class configManager():
         self.influx_verify_ssl = self.config['INFLUXDB'].getboolean('Verify_SSL', fallback=True)
 
         # Cable Modem
-        self.modem_url = self.config['MODEM'].get('URL', fallback='http://192.168.100.1/RgConnect.asp')
+        self.modem_url = self.config['MODEM'].get(
+            'URL', fallback='http://192.168.100.1/RgConnect.asp')
 
 class InfluxdbModem():
 
     def __init__(self, config=None):
-
         self.config = configManager(config=config)
         self.output = self.config.output
         self.influx_client = InfluxDBClient(
@@ -61,7 +62,6 @@ class InfluxdbModem():
         self.modem_url = self.config.modem_url
 
     def parse_modem(self):
-
         print('Getting modem stats')
         try:
             resp = requests.get(self.modem_url)
@@ -103,12 +103,8 @@ class InfluxdbModem():
                     'channel': int(channel)
                 }
             }
- 
+
             series.append(downstream_result_dict)
-
-
-            # if self.output:
-            #     print("channel:{},channel_id:{},frequency:{},power:{},snr:{},corrected:{},uncorrectables:{}".format(channel, channel_id, frequency, power, snr, corrected, uncorrectables))
 
         # upstream table
         for table_row in soup.find_all("table")[3].find_all("tr")[2:]:
@@ -135,9 +131,6 @@ class InfluxdbModem():
 
             series.append(upstream_result_dict)
 
-            # if self.output:
-            #     print("channel:{},channel_id:{},frequency:{},snr:{}".format(channel, channel_id, frequency, snr))
-
         self.write_influx_data(series)
 
     def run(self):
@@ -161,7 +154,8 @@ class InfluxdbModem():
         except (InfluxDBClientError, ConnectionError, InfluxDBServerError) as e:
             if hasattr(e, 'code') and e.code == 404:
 
-                print('Database {} Does Not Exist.  Attempting To Create'.format(self.config.influx_database))
+                print('Database {} Does Not Exist.  Attempting To Create'.format(
+                    self.config.influx_database))
 
                 # TODO Grab exception here
                 self.influx_client.create_database(self.config.influx_database)
@@ -177,12 +171,13 @@ class InfluxdbModem():
 
 
 def main():
-
-    parser = argparse.ArgumentParser(description="A tool to send modem stats statistics to InfluxDB")
-    parser.add_argument('--config', default='config.ini', dest='config', help='Specify a custom location for the config file')
+    parser = argparse.ArgumentParser(description="A tool to send modem statistics to InfluxDB")
+    parser.add_argument('--config', default='config.ini', dest='config',
+                        help='Specify a custom location for the config file')
     args = parser.parse_args()
     collector = InfluxdbModem(config=args.config)
     collector.run()
+
 
 if __name__ == '__main__':
     main()
