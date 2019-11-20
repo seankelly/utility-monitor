@@ -31,7 +31,7 @@ class SB6183Modem():
             sys.exit(1)
 
         series = []
-        current_time = math.trunc(datetime.utcnow().timestamp())
+        current_time = math.trunc(datetime.now().timestamp())
         current_ns = '{}000000000'.format(current_time)
 
         # downstream table
