@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import math
 import sys
 from datetime import datetime
 
@@ -30,7 +31,8 @@ class SB6183Modem():
             sys.exit(1)
 
         series = []
-        current_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+        current_time = math.trunc(datetime.utcnow().timestamp())
+        current_ns = '{}000000000'.format(current_time)
 
         # downstream table
         for table_row in soup.find_all("table")[2].find_all("tr")[2:]:
@@ -47,7 +49,7 @@ class SB6183Modem():
 
             downstream_result_dict = {
                 'measurement': 'cable_modem',
-                'time': current_time,
+                'time': current_ns,
                 'fields': {
                     'channel_id': int(channel_id),
                     'frequency': int(frequency),
@@ -75,7 +77,7 @@ class SB6183Modem():
 
             upstream_result_dict = {
                 'measurement': 'cable_modem',
-                'time': current_time,
+                'time': current_ns,
                 'fields': {
                     'channel_id': int(channel_id),
                     'frequency': int(frequency),
