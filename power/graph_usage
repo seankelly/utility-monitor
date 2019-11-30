@@ -5,9 +5,12 @@ import argparse
 from datetime import date
 import os.path
 
-import rrdtool
+try:
+    import rrdtool
+except ImportError:
+    rrdtool = None
 
-def graph_usage(www_dir, database, cost=None):
+def graph_usage(www_dir, database, cost=None, debug=False):
     common_args = [
         '--imgformat', 'PNG',
         '--width', '600',
@@ -33,6 +36,12 @@ def graph_usage(www_dir, database, cost=None):
         'GPRINT:total_kwh:Total %0.3lf kWh\\n',
     ]
 
+    def graph(*args):
+        if not debug:
+            rrdtool.graph(*args)
+        else:
+            print("rrdtool graph {}".format(' '.join(args)))
+
     if cost:
         common_args.extend([
             'CDEF:cost_=kwh_rate,%f,*' % cost,
@@ -41,13 +50,13 @@ def graph_usage(www_dir, database, cost=None):
         ])
 
     # Graph today and yesterday.
-    rrdtool.graph(
+    graph(
         os.path.join(www_dir, 'today_usage.png'),
         '--start', 'midnight today',
         '--end', 'midnight tomorrow',
         *common_args
     )
-    rrdtool.graph(
+    graph(
         os.path.join(www_dir, 'yesterday_usage.png'),
         '--start', 'midnight yesterday',
         '--end', 'midnight today',
@@ -55,7 +64,7 @@ def graph_usage(www_dir, database, cost=None):
     )
 
     # Graph current week.
-    rrdtool.graph(
+    graph(
         os.path.join(www_dir, 'week_usage.png'),
         '--start', 'midnight Sunday',
         '--end', 'midnight Saturday+24h',
@@ -70,7 +79,7 @@ def graph_usage(www_dir, database, cost=None):
         next_month = 1
         next_year += 1
     end_date = today.replace(year=next_year, month=next_month)
-    rrdtool.graph(
+    graph(
         os.path.join(www_dir, 'month_usage.png'),
         '--start', today.strftime('midnight %B 01 %Y'),
         '--end', end_date.strftime('midnight %B 01 %Y'),
@@ -84,13 +93,18 @@ def parse_args():
     parser.add_argument('--www-dir', '-o', required=True,
                         help="Graph output directory")
     parser.add_argument('--cost', '-c', type=float, help="kWh cost")
+    parser.add_argument('--debug', action='store_true', dest='debug', default=False,
+                        help="Debug mode, don't run commands")
     args = parser.parse_args()
     return args
 
 
 def main():
     args = parse_args()
-    graph_usage(args.www_dir, args.database, cost=args.cost)
+    if rrdtool is None and not args.debug:
+        print("Unable to import rrdtool and not in debug mode.")
+        return
+    graph_usage(args.www_dir, args.database, cost=args.cost, debug=args.debug)
 
 
 if __name__ == '__main__':
