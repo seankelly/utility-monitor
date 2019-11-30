@@ -5,6 +5,7 @@ import argparse
 from datetime import date
 import os.path
 
+from dateutil.relativedelta import relativedelta
 try:
     import rrdtool
 except ImportError:
@@ -73,12 +74,7 @@ def graph_usage(www_dir, database, cost=None, debug=False):
 
     # Graph current month.
     today = date.today()
-    next_month = today.month + 1
-    next_year = today.year
-    if next_month > 12:
-        next_month = 1
-        next_year += 1
-    end_date = today.replace(year=next_year, month=next_month)
+    end_date = today + relativedelta(months=1)
     graph(
         os.path.join(www_dir, 'month_usage.png'),
         '--start', today.strftime('midnight %B 01 %Y'),
