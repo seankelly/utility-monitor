@@ -74,11 +74,18 @@ def graph_usage(www_dir, database, cost=None, debug=False):
 
     # Graph current month.
     today = date.today()
-    end_date = today + relativedelta(months=1)
+    next_month = today + relativedelta(months=1)
+    previous_month = today - relativedelta(months=1)
     graph(
         os.path.join(www_dir, 'month_usage.png'),
         '--start', today.strftime('midnight %B 01 %Y'),
-        '--end', end_date.strftime('midnight %B 01 %Y'),
+        '--end', next_month.strftime('midnight %B 01 %Y'),
+        *common_args
+    )
+    graph(
+        os.path.join(www_dir, 'previous_month_usage.png'),
+        '--start', previous_month.strftime('midnight %B 01 %Y'),
+        '--end', today.strftime('midnight %B 01 %Y'),
         *common_args
     )
 
