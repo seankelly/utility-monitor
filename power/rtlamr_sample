@@ -29,12 +29,11 @@ def rtlamr(rtl_tcp_server=None, filterid=None):
 
 
 def send_meter_read(url, timestamp, meter_read, dry_run=False):
-    meter_influxdb = 'electric usage=%di %s' % (
-        meter_read, timestamp)
+    meter_influxdb = f'electric usage={meter_read}i {timestamp}'
     if not dry_run:
         req = requests.post(url, data=meter_influxdb)
     else:
-        print("Sending '%s' to %s" % (meter_influxdb, url))
+        print(f"Sending '{meter_influxdb}' to {url}")
 
 
 def parse_args():
@@ -65,17 +64,16 @@ def main():
         try:
             meter_reading = json.loads(sample_line)
         except json.decoder.JSONDecodeError:
-            print("Failed to decode: %s" % sample_line)
+            print(f"Failed to decode: {sample_line}")
             continue
         # Send consumption count to URL.
         consumption_count = int(meter_reading['Message']['LastConsumptionCount'])
         if args.verbose:
-            print("Received consumption usage of %d" % consumption_count)
+            print(f"Received consumption usage of {consumption_count}")
         consumption_change = consumption_count - last_consumption
         if consumption_count >= 2**31:
             # Read error from the meter.
-            print("Failed to get sensical consumption count.")
-            print(meter_reading)
+            print(f"Failed to get sensical consumption count: {meter_reading}.")
             continue
         elif last_consumption == consumption_count:
             print("No change in consumption, skipping")
@@ -84,12 +82,12 @@ def main():
             print("Consumption count went backwards, skipping")
             continue
         elif last_consumption > 0 and consumption_change > CONSUMPTION_SPIKE_IGNORE:
-            print("Large consumption spike detected (%d), skipping" % consumption_change)
+            print(f"Large consumption spike detected ({consumption_change}), skipping")
             continue
         # "Time":"2019-06-30T21:03:08.177893784-04:00"
         time_match = time_re.match(meter_reading['Time'])
         if not time_match:
-            print("Failed to match against time '%s'" % meter_reading['Time'])
+            print(f"Failed to match against time '{meter_reading['Time']}'")
             continue
         meter_strtime = time_match.group(1) + time_match.group(3).replace(':', '')
         meter_time = datetime.strptime(meter_strtime, METER_TIME_FORMAT)
@@ -98,7 +96,7 @@ def main():
         # often only has new values every five minutes. Skipping nanoseconds
         # allows InfluxDB to possibly compress the values better without nine
         # random digits attached to every reading.
-        timestamp = '{}000000000'.format(int(meter_time.timestamp()))
+        timestamp = f'{int(meter_time.timestamp())}000000000'
         send_meter_read(url, timestamp, consumption_count, dry_run=args.dry_run)
         last_consumption = consumption_count
 
