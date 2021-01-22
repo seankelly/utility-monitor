@@ -28,10 +28,10 @@ def rtlamr(rtl_tcp_server=None, filterid=None):
     return rtlamr
 
 
-def send_meter_read(url, timestamp, meter_read, debug=False):
+def send_meter_read(url, timestamp, meter_read, dry_run=False):
     meter_influxdb = 'electric usage=%di %s' % (
         meter_read, timestamp)
-    if not debug:
+    if not dry_run:
         req = requests.post(url, data=meter_influxdb)
     else:
         print("Sending '%s' to %s" % (meter_influxdb, url))
@@ -42,8 +42,8 @@ def parse_args():
     parser.add_argument('--filterid', '-I', help="Filter on this meter ID")
     parser.add_argument('--server', '-s', help="rtl_tcp server")
     parser.add_argument('--url', '-u', help="Telegraf URL")
-    parser.add_argument('--debug', '-d', action='store_true', default=False,
-                        help="Debug mode")
+    parser.add_argument('--dry-run', '-n', action='store_true', default=False,
+                        help="dry-run mode")
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
                         help="Verbose mode")
     args = parser.parse_args()
@@ -99,7 +99,7 @@ def main():
         # allows InfluxDB to possibly compress the values better without nine
         # random digits attached to every reading.
         timestamp = '{}000000000'.format(int(meter_time.timestamp()))
-        send_meter_read(url, timestamp, consumption_count, debug=args.debug)
+        send_meter_read(url, timestamp, consumption_count, dry_run=args.dry_run)
         last_consumption = consumption_count
 
 
