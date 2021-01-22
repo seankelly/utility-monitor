@@ -5,8 +5,7 @@ import json
 import re
 import subprocess
 from datetime import datetime
-
-import requests
+from urllib import request
 
 
 DEFAULT_URL =  'http://127.0.0.1:8080/telegraf'
@@ -31,7 +30,9 @@ def rtlamr(rtl_tcp_server=None, filterid=None):
 def send_meter_read(url, timestamp, meter_read, dry_run=False):
     meter_influxdb = f'electric usage={meter_read}i {timestamp}'
     if not dry_run:
-        req = requests.post(url, data=meter_influxdb)
+        meter_influxdb_bytes = meter_influxdb.encode('utf-8')
+        req = request.Request(url, data=meter_influxdb_bytes)
+        resp = request.urlopen(req)
     else:
         print(f"Sending '{meter_influxdb}' to {url}")
 
