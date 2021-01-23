@@ -77,7 +77,6 @@ def main():
             print(f"Failed to get sensical consumption count: {meter_reading}.")
             continue
         elif last_consumption == consumption_count:
-            print("No change in consumption, skipping")
             continue
         elif last_consumption > consumption_count:
             print("Consumption count went backwards, skipping")
