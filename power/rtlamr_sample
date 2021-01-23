@@ -34,7 +34,7 @@ def send_meter_read(url, timestamp, meter_read, dry_run=False):
         req = request.Request(url, data=meter_influxdb_bytes)
         resp = request.urlopen(req)
     else:
-        print(f"Sending '{meter_influxdb}' to {url}")
+        print(f"Sending '{meter_influxdb}' to {url}", flush=True)
 
 
 def parse_args():
@@ -65,29 +65,29 @@ def main():
         try:
             meter_reading = json.loads(sample_line)
         except json.decoder.JSONDecodeError:
-            print(f"Failed to decode: {sample_line}")
+            print(f"Failed to decode: {sample_line}", flush=True)
             continue
         # Send consumption count to URL.
         consumption_count = int(meter_reading['Message']['LastConsumptionCount'])
         if args.verbose:
-            print(f"Received consumption usage of {consumption_count}")
+            print(f"Received consumption usage of {consumption_count}", flush=True)
         consumption_change = consumption_count - last_consumption
         if consumption_count >= 2**31:
             # Read error from the meter.
-            print(f"Failed to get sensical consumption count: {meter_reading}.")
+            print(f"Failed to get sensical consumption count: {meter_reading}.", flush=True)
             continue
         elif last_consumption == consumption_count:
             continue
         elif last_consumption > consumption_count:
-            print("Consumption count went backwards, skipping")
+            print("Consumption count went backwards, skipping", flush=True)
             continue
         elif last_consumption > 0 and consumption_change > CONSUMPTION_SPIKE_IGNORE:
-            print(f"Large consumption spike detected ({consumption_change}), skipping")
+            print(f"Large consumption spike detected ({consumption_change}), skipping", flush=True)
             continue
         # "Time":"2019-06-30T21:03:08.177893784-04:00"
         time_match = time_re.match(meter_reading['Time'])
         if not time_match:
-            print(f"Failed to match against time '{meter_reading['Time']}'")
+            print(f"Failed to match against time '{meter_reading['Time']}'", flush=True)
             continue
         meter_strtime = time_match.group(1) + time_match.group(3).replace(':', '')
         meter_time = datetime.strptime(meter_strtime, METER_TIME_FORMAT)
