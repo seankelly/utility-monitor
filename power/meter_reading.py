@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import argparse
 import json
@@ -50,7 +50,7 @@ def rtl_tcp_one_shot(rtl_tcp_server=None, filterid=None):
 
 def read_input_file(input_file):
     if not os.path.exists(input_file):
-        print "Could not access input file: %s" % input_file
+        print("Could not access input file: %s" % input_file)
         return
     with open(input_file) as input_data:
         meter_reading = json.load(input_data)
