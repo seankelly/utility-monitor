@@ -43,14 +43,14 @@ def rtl_tcp_one_shot(rtl_tcp_server=None, filterid=None):
                               stderr=subprocess.PIPE)
     stdout, stderr = rtlamr.communicate()
     if rtlamr.returncode != 0:
-        raise RuntimeError("Failed to run rtlamr: %s" % stderr)
+        raise RuntimeError(f"Failed to run rtlamr: {stderr}")
     meter_idm = json.loads(stdout)
     return meter_idm
 
 
 def read_input_file(input_file):
     if not os.path.exists(input_file):
-        print("Could not access input file: %s" % input_file)
+        print(f"Could not access input file: {input_file}")
         return
     with open(input_file) as input_data:
         meter_reading = json.load(input_data)
