@@ -16,15 +16,52 @@ METER_TIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 CONSUMPTION_SPIKE_IGNORE = 10000
 
 
-def rtlamr(rtl_tcp_server=None, filterid=None):
-    rtlamr_cmd = ['rtlamr', '-msgtype', 'idm', '-format', 'json']
-    if rtl_tcp_server:
-        rtlamr_cmd.extend(['-server', rtl_tcp_server])
-    if filterid:
-        rtlamr_cmd.extend(['-filterid', filterid])
-    rtlamr = subprocess.Popen(rtlamr_cmd, stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
-    return rtlamr
+class Rtlamr:
+
+    def __init__(self, filterid=None, msgtype=None, rtl_tcp_server=None):
+        self.filterid = filterid
+        self.msgtype = msgtype
+        self.rtl_tcp_server = rtl_tcp_server
+
+    def run(self):
+        rtlamr_cmd = ['rtlamr', '-format', 'json']
+        if self.rtl_tcp_server:
+            rtlamr_cmd.extend(['-server', self.rtl_tcp_server])
+        if self.filterid:
+            rtlamr_cmd.extend(['-filterid', self.filterid])
+        if self.msgtype:
+            rtlamr_cmd.extend(['-msgtype', self.msgtype])
+        rtlamr = subprocess.Popen(rtlamr_cmd, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+
+        while True:
+            sample_bytes = rtlamr.stdout.readline()
+            if not sample_bytes:
+                continue
+            sample_line = sample_bytes.decode('utf-8')
+            try:
+                meter_reading = json.loads(sample_line)
+            except json.decoder.JSONDecodeError:
+                print(f"Failed to decode: {sample_line}", flush=True)
+                continue
+            msgtype = meter_reading['Type']
+            # Send consumption count to URL.
+            if msgtype == 'SCM' or msgtype == 'SCM+':
+                consumption_count = self._parse_scm(meter_reading)
+            elif msgtype == 'IDM':
+                consumption_count = self._parse_idm(meter_reading)
+            else:
+                print(f"Unknown message type: {msgtype}", flush=True)
+                continue
+            yield consumption_count
+
+    def _parse_idm(idm_msg):
+        consumption_count = int(meter_reading['Message']['LastConsumptionCount'])
+        return consumption_count
+
+    def _parse_scm(scm_msg):
+        consumption_count = meter_reading['Message']['Consumption']
+        return consumption_count
 
 
 def send_meter_read(url, timestamp, meter_read, dry_run=False):
@@ -40,6 +77,7 @@ def send_meter_read(url, timestamp, meter_read, dry_run=False):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--filterid', '-I', help="Filter on this meter ID")
+    parser.add_argument('--msgtype', '-T', help="Filter on this message type")
     parser.add_argument('--server', '-s', help="rtl_tcp server")
     parser.add_argument('--url', '-u', help="Telegraf URL")
     parser.add_argument('--dry-run', '-n', action='store_true', default=False,
@@ -55,20 +93,9 @@ def main():
     url = args.url or DEFAULT_URL
 
     time_re = re.compile(METER_TIME_REGEX)
-    rtlamr_proc = rtlamr(args.server, args.filterid)
     last_consumption = -1
-    while True:
-        sample_bytes = rtlamr_proc.stdout.readline()
-        if not sample_bytes:
-            continue
-        sample_line = sample_bytes.decode('utf-8')
-        try:
-            meter_reading = json.loads(sample_line)
-        except json.decoder.JSONDecodeError:
-            print(f"Failed to decode: {sample_line}", flush=True)
-            continue
-        # Send consumption count to URL.
-        consumption_count = int(meter_reading['Message']['LastConsumptionCount'])
+    rtlamr = Rtlamr(args.filterid, args.msgtype, args.server)
+    for consumption_count in rtlamr.run():
         if args.verbose:
             print(f"Received consumption usage of {consumption_count}", flush=True)
         consumption_change = consumption_count - last_consumption
