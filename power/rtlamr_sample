@@ -18,6 +18,8 @@ CONSUMPTION_SPIKE_IGNORE = 10000
 
 class Rtlamr:
 
+    TIME_RE = re.compile(METER_TIME_REGEX)
+
     def __init__(self, filterid=None, msgtype=None, rtl_tcp_server=None):
         self.filterid = filterid
         self.msgtype = msgtype
@@ -45,6 +47,10 @@ class Rtlamr:
                 print(f"Failed to decode: {sample_line}", flush=True)
                 continue
             msgtype = meter_reading['Type']
+            msg_time = self._parse_msg_time(meter_reading['Time'])
+            if msg_time is None:
+                print(f"Failed to match against time '{meter_reading['Time']}'", flush=True)
+                continue
             # Send consumption count to URL.
             if msgtype == 'SCM' or msgtype == 'SCM+':
                 consumption_count = self._parse_scm(meter_reading)
@@ -53,7 +59,7 @@ class Rtlamr:
             else:
                 print(f"Unknown message type: {msgtype}", flush=True)
                 continue
-            yield consumption_count
+            yield msg_time, consumption_count
 
     @staticmethod
     def _parse_idm(idm_msg):
@@ -64,6 +70,15 @@ class Rtlamr:
     def _parse_scm(scm_msg):
         consumption_count = scm_msg['Message']['Consumption']
         return consumption_count
+
+    def _parse_msg_time(self, timestamp):
+        # "Time":"2019-06-30T21:03:08.177893784-04:00"
+        time_match = self.TIME_RE.match(timestamp)
+        if not time_match:
+            return
+        meter_strtime = time_match.group(1) + time_match.group(3).replace(':', '')
+        meter_time = datetime.strptime(meter_strtime, METER_TIME_FORMAT)
+        return meter_time
 
 
 def send_meter_read(url, timestamp, meter_read, dry_run=False):
@@ -97,13 +112,13 @@ def main():
     time_re = re.compile(METER_TIME_REGEX)
     last_consumption = -1
     rtlamr = Rtlamr(args.filterid, args.msgtype, args.server)
-    for consumption_count in rtlamr.run():
+    for msg_time, consumption_count in rtlamr.run():
         if args.verbose:
             print(f"Received consumption usage of {consumption_count}", flush=True)
         consumption_change = consumption_count - last_consumption
         if consumption_count >= 2**31:
             # Read error from the meter.
-            print(f"Failed to get sensical consumption count: {meter_reading}.", flush=True)
+            print(f"Failed to get sensical consumption count.", flush=True)
             continue
         elif last_consumption == consumption_count:
             continue
@@ -113,19 +128,12 @@ def main():
         elif last_consumption > 0 and consumption_change > CONSUMPTION_SPIKE_IGNORE:
             print(f"Large consumption spike detected ({consumption_change}), skipping", flush=True)
             continue
-        # "Time":"2019-06-30T21:03:08.177893784-04:00"
-        time_match = time_re.match(meter_reading['Time'])
-        if not time_match:
-            print(f"Failed to match against time '{meter_reading['Time']}'", flush=True)
-            continue
-        meter_strtime = time_match.group(1) + time_match.group(3).replace(':', '')
-        meter_time = datetime.strptime(meter_strtime, METER_TIME_FORMAT)
         # Force nanoseconds to zero. Including nanoseconds adds false precision
         # to the reading. Already it only updates every 60 seconds at best and
         # often only has new values every five minutes. Skipping nanoseconds
         # allows InfluxDB to possibly compress the values better without nine
         # random digits attached to every reading.
-        timestamp = f'{int(meter_time.timestamp())}000000000'
+        timestamp = f'{int(msg_time.timestamp())}000000000'
         send_meter_read(url, timestamp, consumption_count, dry_run=args.dry_run)
         last_consumption = consumption_count
 
