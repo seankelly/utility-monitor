@@ -55,12 +55,14 @@ class Rtlamr:
                 continue
             yield consumption_count
 
+    @staticmethod
     def _parse_idm(idm_msg):
-        consumption_count = int(meter_reading['Message']['LastConsumptionCount'])
+        consumption_count = int(idm_msg['Message']['LastConsumptionCount'])
         return consumption_count
 
+    @staticmethod
     def _parse_scm(scm_msg):
-        consumption_count = meter_reading['Message']['Consumption']
+        consumption_count = scm_msg['Message']['Consumption']
         return consumption_count
 
 
