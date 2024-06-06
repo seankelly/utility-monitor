@@ -11,8 +11,8 @@ from urllib import request
 DEFAULT_URL =  'http://127.0.0.1:8080/telegraf'
 METER_TIME_REGEX = r'^([^.]+)\.(\d+)([+-].*)$'
 METER_TIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
-# Ignore any consumption spike this number or higher. The units are daWh so
-# over a five minute window this is 120 KWh usage.
+# Ignore any consumption spike this number or higher. The units are Wh so
+# over a five minute window this is 120 kWh usage.
 CONSUMPTION_SPIKE_IGNORE = 10000
 
 
