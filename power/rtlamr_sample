@@ -118,7 +118,7 @@ def main():
         consumption_change = consumption_count - last_consumption
         if consumption_count >= 2**31:
             # Read error from the meter.
-            print(f"Failed to get sensical consumption count.", flush=True)
+            print("Failed to get sensical consumption count.", flush=True)
             continue
         elif last_consumption == consumption_count:
             continue
