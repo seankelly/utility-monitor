@@ -9,6 +9,7 @@ from urllib import request
 
 
 DEFAULT_URL =  'http://127.0.0.1:8080/telegraf'
+MEASUREMENT_NAME = 'electric'
 METER_TIME_REGEX = r'^([^.]+)\.(\d+)([+-].*)$'
 METER_TIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 # Ignore any consumption spike this number or higher. The units are Wh so
@@ -46,6 +47,13 @@ class Rtlamr:
             except json.decoder.JSONDecodeError:
                 print(f"Failed to decode: {sample_line}", flush=True)
                 continue
+            # Include all keys in the message that end with "ID" or "Type" to
+            # allow tracking the source of the meter reading (e.g. having
+            # multiple meters).
+            message_tags = {}
+            for key, value in meter_reading['Message'].items():
+                if key.endswith('ID') or key.endswith('Type'):
+                    message_tags[key] = value
             msgtype = meter_reading['Type']
             msg_time = self._parse_msg_time(meter_reading['Time'])
             if msg_time is None:
@@ -59,7 +67,7 @@ class Rtlamr:
             else:
                 print(f"Unknown message type: {msgtype}", flush=True)
                 continue
-            yield msg_time, consumption_count
+            yield msg_time, message_tags, consumption_count
 
     @staticmethod
     def _parse_idm(idm_msg):
@@ -81,8 +89,11 @@ class Rtlamr:
         return meter_time
 
 
-def send_meter_read(url, timestamp, meter_read, dry_run=False):
-    meter_influxdb = f'electric usage={meter_read}i {timestamp}'
+def send_meter_read(url, timestamp, tags, meter_read, dry_run=False):
+    measurement = MEASUREMENT_NAME
+    for tag_name, tag_value in tags.items():
+        measurement += f',{tag_name}={tag_value}'
+    meter_influxdb = f'{measurement} usage={meter_read}i {timestamp}'
     if not dry_run:
         meter_influxdb_bytes = meter_influxdb.encode('utf-8')
         req = request.Request(url, data=meter_influxdb_bytes)
@@ -111,7 +122,7 @@ def main():
 
     last_consumption = -1
     rtlamr = Rtlamr(args.filterid, args.msgtype, args.server)
-    for msg_time, consumption_count in rtlamr.run():
+    for msg_time, tags, consumption_count in rtlamr.run():
         if args.verbose:
             print(f"Received consumption usage of {consumption_count}", flush=True)
         consumption_change = consumption_count - last_consumption
@@ -133,7 +144,7 @@ def main():
         # allows InfluxDB to possibly compress the values better without nine
         # random digits attached to every reading.
         timestamp = f'{int(msg_time.timestamp())}000000000'
-        send_meter_read(url, timestamp, consumption_count, dry_run=args.dry_run)
+        send_meter_read(url, timestamp, tags, consumption_count, dry_run=args.dry_run)
         last_consumption = consumption_count
 
 
