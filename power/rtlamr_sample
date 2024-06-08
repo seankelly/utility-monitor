@@ -109,7 +109,6 @@ def main():
     args = parse_args()
     url = args.url or DEFAULT_URL
 
-    time_re = re.compile(METER_TIME_REGEX)
     last_consumption = -1
     rtlamr = Rtlamr(args.filterid, args.msgtype, args.server)
     for msg_time, consumption_count in rtlamr.run():
